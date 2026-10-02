@@ -1,4 +1,7 @@
+'use client';
+
 import { useState } from 'react';
+import { saveContactEnquiry } from '@/lib/firebaseHelpers';
 
 const initialFormState = {
   name: '',
@@ -13,6 +16,7 @@ export function ContactForm() {
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
@@ -30,40 +34,39 @@ export function ContactForm() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
     if (!validate()) {
       setStatus({ type: 'error', message: 'Please correct the highlighted fields and try again.' });
       return;
     }
 
-    const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
-
-    if (!endpoint) {
-      setStatus({
-        type: 'info',
-        message: 'Form submission is ready for integration. Add NEXT_PUBLIC_FORMSPREE_ENDPOINT to send enquiries securely to your preferred service.'
-      });
-      return;
-    }
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Submission failed');
+      // Save to Firebase
+      const enquiryId = await saveContactEnquiry(formData);
+      
+      // Optional: Also send to Formspree if configured
+      const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
+      if (endpoint) {
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ...formData, enquiryId }),
+        });
       }
 
-      setStatus({ type: 'success', message: 'Your enquiry has been submitted successfully.' });
+      setStatus({ type: 'success', message: 'Your enquiry has been submitted successfully. We will be in touch shortly.' });
       setFormData(initialFormState);
       setErrors({});
-    } catch {
+    } catch (error) {
+      console.error('Submission error:', error);
       setStatus({ type: 'error', message: 'We could not submit your enquiry. Please try again or contact FINVALUE ADVISORY directly.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -78,24 +81,45 @@ export function ContactForm() {
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <div>
           <label className="text-sm font-medium text-navy">Full name</label>
-          <input value={formData.name} onChange={(e) => updateField('name', e.target.value)} className="input-field" />
+          <input 
+            value={formData.name} 
+            onChange={(e) => updateField('name', e.target.value)} 
+            className="input-field" 
+            disabled={isSubmitting}
+          />
           {errors.name ? <p className="mt-2 text-sm text-red-600">{errors.name}</p> : null}
         </div>
 
         <div>
           <label className="text-sm font-medium text-navy">Email address</label>
-          <input type="email" value={formData.email} onChange={(e) => updateField('email', e.target.value)} className="input-field" />
+          <input 
+            type="email" 
+            value={formData.email} 
+            onChange={(e) => updateField('email', e.target.value)} 
+            className="input-field" 
+            disabled={isSubmitting}
+          />
           {errors.email ? <p className="mt-2 text-sm text-red-600">{errors.email}</p> : null}
         </div>
 
         <div>
           <label className="text-sm font-medium text-navy">Business or organisation</label>
-          <input value={formData.organisation} onChange={(e) => updateField('organisation', e.target.value)} className="input-field" />
+          <input 
+            value={formData.organisation} 
+            onChange={(e) => updateField('organisation', e.target.value)} 
+            className="input-field" 
+            disabled={isSubmitting}
+          />
         </div>
 
         <div>
           <label className="text-sm font-medium text-navy">Service of interest</label>
-          <select value={formData.service} onChange={(e) => updateField('service', e.target.value)} className="input-field">
+          <select 
+            value={formData.service} 
+            onChange={(e) => updateField('service', e.target.value)} 
+            className="input-field" 
+            disabled={isSubmitting}
+          >
             <option value="">Select a service</option>
             <option value="Accounting & Bookkeeping">Accounting &amp; Bookkeeping</option>
             <option value="Tax & TIN Support">Tax &amp; TIN Support</option>
@@ -111,7 +135,13 @@ export function ContactForm() {
 
       <div className="mt-6">
         <label className="text-sm font-medium text-navy">Enquiry description</label>
-        <textarea value={formData.message} onChange={(e) => updateField('message', e.target.value)} rows={6} className="input-field" />
+        <textarea 
+          value={formData.message} 
+          onChange={(e) => updateField('message', e.target.value)} 
+          rows={6} 
+          className="input-field" 
+          disabled={isSubmitting}
+        />
         {errors.message ? <p className="mt-2 text-sm text-red-600">{errors.message}</p> : null}
       </div>
 
@@ -121,6 +151,7 @@ export function ContactForm() {
           checked={formData.consent}
           onChange={(e) => updateField('consent', e.target.checked)}
           className="mt-1 h-4 w-4 rounded border-slate-300 text-gold focus:ring-gold"
+          disabled={isSubmitting}
         />
         <label className="text-sm leading-6 text-slate-700">
           I consent to FINVALUE ADVISORY contacting me regarding my enquiry and processing the information provided.
@@ -134,8 +165,12 @@ export function ContactForm() {
         </div>
       ) : null}
 
-      <button type="submit" className="btn-primary mt-6 w-full sm:w-auto">
-        Submit enquiry
+      <button 
+        type="submit" 
+        className="btn-primary mt-6 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed" 
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Submitting...' : 'Submit enquiry'}
       </button>
     </form>
   );
