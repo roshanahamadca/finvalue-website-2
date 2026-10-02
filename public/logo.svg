@@ -1,0 +1,8 @@
+<svg width="520" height="120" viewBox="0 0 520 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="520" height="120" rx="18" fill="#0B2340"/>
+  <path d="M38 91V29H62.8C75.6 29 84.4 35.6 84.4 47C84.4 55.6 80.2 62.2 71.6 65.4L87.4 91H69.4L58 72.4H59.4V91H38ZM59.4 60.4H62.6C69.2 60.4 73 57.2 73 50.2C73 43 69.2 40 62.6 40H59.4V60.4Z" fill="#B99552"/>
+  <path d="M94.2 91V29H111.8V91H94.2Z" fill="white"/>
+  <path d="M126.8 91L154.6 29H170.4L142.2 91H126.8ZM146.6 91L174.4 29H190L162.8 91H146.6Z" fill="white"/>
+  <text x="210" y="72" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="1.5">FINVALUE</text>
+  <text x="210" y="98" fill="#B99552" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="4">ADVISORY</text>
+</svg>
